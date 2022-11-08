@@ -4,20 +4,27 @@ import cn.cls.blog.dto.*;
 import cn.cls.blog.entity.Article;
 import cn.cls.blog.service.*;
 import cn.cls.blog.util.BeanCopyUtils;
+import cn.cls.blog.util.IPUtils;
 import cn.cls.blog.vo.BlogInfoVO;
 import cn.cls.blog.vo.PageVO;
 import cn.cls.blog.vo.WebsiteConfigVO;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import eu.bitwalker.useragentutils.Browser;
+import eu.bitwalker.useragentutils.OperatingSystem;
+import eu.bitwalker.useragentutils.UserAgent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.DigestUtils;
 
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static cn.cls.blog.constant.CommonConst.DEFAULT_CONFIG_ID;
-import static cn.cls.blog.constant.CommonConst.FALSE;
+import static cn.cls.blog.constant.CommonConst.*;
 import static cn.cls.blog.constant.RedisPrefixConst.*;
 import static cn.cls.blog.enums.ArticleStatusEnum.PUBLIC;
 
@@ -41,6 +48,8 @@ public class BlogInfoServiceImpl implements BlogInfoService {
     private UserInfoService userInfoService;
     @Autowired
     private UniqueViewService uniqueViewService;
+    @Resource
+    private HttpServletRequest request;
 
     @Override
     public BlogHomeInfoDTO getBlogHomeInfo() {
@@ -90,30 +99,6 @@ public class BlogInfoServiceImpl implements BlogInfoService {
         return blogBackInfoDTO;
     }
 
-    /**
-     * 查询文章排行
-     *
-     * @param articleMap 文章信息
-     * @return {@link List<ArticleRankDTO>} 文章排行
-     */
-    private List<ArticleRankDTO> listArticleRank(Map<Object, Double> articleMap) {
-        //提取文章id
-        List<Integer> articleIdList = new ArrayList<>(articleMap.size());
-        articleMap.forEach((key, value) -> {
-            articleIdList.add((Integer) key);
-        });
-        // 查询文章信息
-        return articleService.list(new LambdaQueryWrapper<Article>()
-                        .select(Article::getId, Article::getArticleTitle)
-                        .in(Article::getId, articleIdList))
-                .stream().map(article -> ArticleRankDTO.builder()
-                        .articleTitle(article.getArticleTitle())
-                        .viewsCount(articleMap.get(article.getId()).intValue())
-                        .build())
-                .sorted(Comparator.comparing(ArticleRankDTO::getViewsCount).reversed())
-                .collect(Collectors.toList());
-    }
-
     @Override
     public void updateWebsiteConfig(WebsiteConfigVO websiteConfigVO) {
 
@@ -147,6 +132,56 @@ public class BlogInfoServiceImpl implements BlogInfoService {
 
     @Override
     public void report() {
-
+        // 获取ip
+        String ipAddress = IPUtils.getIpAddress(request);
+        // 获取访问设备
+        UserAgent userAgent = IPUtils.getUserAgent(request);
+        Browser browser = userAgent.getBrowser();
+        OperatingSystem operatingSystem = userAgent.getOperatingSystem();
+        // 生成唯一用户标识
+        String uuid = ipAddress + browser.getName() + operatingSystem.getName();
+        String md5 = DigestUtils.md5DigestAsHex(uuid.getBytes());
+        // 判断是否访问
+        if (!redisService.sIsMember(UNIQUE_VISITOR, md5)) {
+            // 统计游客地域分布
+            String ipSource = IPUtils.getIpSource(ipAddress);
+            if (StringUtils.isNotBlank(ipSource)) {
+                ipSource = ipSource.substring(0, 2)
+                        .replaceAll(PROVINCE, "")
+                        .replaceAll(CITY, "");
+                redisService.hIncr(VISITOR_AREA, ipSource, 1L);
+            } else {
+                redisService.hIncr(VISITOR_AREA, UNKNOWN, 1L);
+            }
+            // 访问量+1
+            redisService.incr(BLOG_VIEWS_COUNT, 1);
+            // 保存唯一标识
+            redisService.sAdd(UNIQUE_VISITOR, md5);
+        }
     }
+
+    /**
+     * 查询文章排行
+     *
+     * @param articleMap 文章信息
+     * @return {@link List<ArticleRankDTO>} 文章排行
+     */
+    private List<ArticleRankDTO> listArticleRank(Map<Object, Double> articleMap) {
+        //提取文章id
+        List<Integer> articleIdList = new ArrayList<>(articleMap.size());
+        articleMap.forEach((key, value) -> {
+            articleIdList.add((Integer) key);
+        });
+        // 查询文章信息
+        return articleService.list(new LambdaQueryWrapper<Article>()
+                        .select(Article::getId, Article::getArticleTitle)
+                        .in(Article::getId, articleIdList))
+                .stream().map(article -> ArticleRankDTO.builder()
+                        .articleTitle(article.getArticleTitle())
+                        .viewsCount(articleMap.get(article.getId()).intValue())
+                        .build())
+                .sorted(Comparator.comparing(ArticleRankDTO::getViewsCount).reversed())
+                .collect(Collectors.toList());
+    }
+
 }
