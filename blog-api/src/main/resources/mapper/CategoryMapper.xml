@@ -15,4 +15,29 @@
         id,category_name,create_time,
         update_time
     </sql>
+    <select id="listCategoryDTO" resultType="cn.cls.blog.dto.CategoryDTO">
+        SELECT c.id,
+               category_name,
+               COUNT(a.category_id) AS article_count
+        FROM tb_category c
+                 LEFT JOIN tb_article a ON c.id = a.category_id
+        WHERE a.is_delete = 0
+        GROUP BY c.id
+    </select>
+    <select id="listCategoryBackDTO" resultType="cn.cls.blog.dto.CategoryBackDTO">
+        SELECT c.id,
+        c.category_name,
+        COUNT(a.category_id) AS article_count,
+        c.create_time
+        FROM tb_category c
+        LEFT JOIN tb_article a on c.id = a.category_id
+        WHERE
+        a.is_delete = 0
+        <if test="condition.keywords != null">
+            AND
+            c.category_name LIKE CONCAT('%',#{condition.keywords},'%')
+        </if>
+        GROUP BY c.id
+        LIMIT #{current},#{size}
+    </select>
 </mapper>
