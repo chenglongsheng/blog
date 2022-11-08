@@ -1,7 +1,10 @@
 package cn.cls.blog.mapper;
 
+import cn.cls.blog.dto.ArticleStatisticsDTO;
 import cn.cls.blog.entity.Article;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+
+import java.util.List;
 
 /**
  * @author CLS
@@ -11,6 +14,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  */
 public interface ArticleMapper extends BaseMapper<Article> {
 
+    List<ArticleStatisticsDTO> listArticleStatistics();
 }
 
 

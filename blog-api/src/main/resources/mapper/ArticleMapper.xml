@@ -27,4 +27,11 @@
         is_delete,status,create_time,
         update_time
     </sql>
+    <select id="listArticleStatistics" resultType="cn.cls.blog.dto.ArticleStatisticsDTO">
+        SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS date,
+               COUNT(1)                             AS count
+        FROM tb_article
+        GROUP BY date
+        ORDER BY date DESC
+    </select>
 </mapper>

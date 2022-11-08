@@ -1,7 +1,13 @@
 package cn.cls.blog.mapper;
 
+import cn.cls.blog.dto.UniqueViewDTO;
 import cn.cls.blog.entity.UniqueView;
+import cn.hutool.core.date.DateTime;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.Date;
+import java.util.List;
 
 /**
  * @author CLS
@@ -11,6 +17,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  */
 public interface UniqueViewMapper extends BaseMapper<UniqueView> {
 
+    List<UniqueViewDTO> listUniqueViews(@Param("startTime") Date startTime, @Param("endTime") Date endTime);
 }
 
 

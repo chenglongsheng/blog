@@ -36,7 +36,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
     @Override
     public PageR<CategoryDTO> listCategories() {
-        return new PageR<>(baseMapper.listCategoryDTO(), baseMapper.selectCount(null));
+        return new PageR<>(listCategoryDTO(), baseMapper.selectCount(null));
     }
 
     @Override
@@ -78,6 +78,11 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
             throw new BizException("分类还有文章，无法删除分类");
         }
         super.removeBatchByIds(categoryIdList);
+    }
+
+    @Override
+    public List<CategoryDTO> listCategoryDTO() {
+        return baseMapper.listCategoryDTO();
     }
 }
 

@@ -15,4 +15,11 @@
         id,views_count,create_time,
         update_time
     </sql>
+    <select id="listUniqueViews" resultType="cn.cls.blog.dto.UniqueViewDTO">
+        SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS `day`,
+               views_count
+        FROM tb_unique_view
+        WHERE create_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY create_time
+    </select>
 </mapper>

@@ -1,7 +1,10 @@
 package cn.cls.blog.service;
 
+import cn.cls.blog.dto.UniqueViewDTO;
 import cn.cls.blog.entity.UniqueView;
 import com.baomidou.mybatisplus.extension.service.IService;
+
+import java.util.List;
 
 /**
  * @author CLS
@@ -10,4 +13,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface UniqueViewService extends IService<UniqueView> {
 
+    List<UniqueViewDTO> listUniqueViews();
 }
